@@ -1,0 +1,5 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { getPublishedNews } from "@/lib/content-store";
+export const metadata: Metadata = { title: "News & insights", description: "Procurement and project guidance from GRIMM PUMP Africa." };
+export default async function NewsPage() { const news = await getPublishedNews(); return <div className="wrap page"><p className="eyebrow">NEWS & INSIGHTS</p><h1>Project guidance and industry context.</h1><p className="page-lead">This local site ships with a manually authored procurement guide. The production news automation is deliberately not enabled without approved sources and credentials.</p><div className="news-list">{news.map((article) => <article key={article.id}><span>{article.category} · {new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(article.publishedAt))}</span><h2><Link href={`/news/${article.slug}`}>{article.title}</Link></h2><p>{article.excerpt}</p><Link className="inline-link" href={`/news/${article.slug}`}>Read article →</Link></article>)}</div></div>; }

@@ -18,11 +18,16 @@ export type NewsArticle = {
   excerpt: string;
   content: string[];
   category: string;
-  status: "draft" | "published";
+  status: "draft" | "review_required" | "published" | "archived";
   publishedAt: string;
   sourceName?: string;
   sourceUrl?: string;
   relatedProductIds: string[];
+  sourcePublishedAt?: string;
+  sourceAuthor?: string;
+  updatedAt?: string;
+  keyTakeaways?: string[];
+  geoSummary?: string;
 };
 
 export type Lead = {

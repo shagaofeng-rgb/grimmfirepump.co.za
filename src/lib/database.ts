@@ -11,7 +11,7 @@ function databaseUrl(): string {
 }
 
 export function hasDatabase(): boolean {
-  return Boolean(process.env.DATABASE_URL);
+  return process.env.DISABLE_DATABASE !== "true" && Boolean(process.env.DATABASE_URL);
 }
 
 export function getDatabase(): Database {

@@ -246,5 +246,23 @@ p { max-width: 68ch; }
 .admin-table article > a { align-self: start; color: var(--admin-green); font-size: .84rem; font-weight: 750; overflow-wrap: anywhere; }
 .admin-table article p { grid-column: 1 / -1; margin: 4px 0 0; color: #61786f; font-size: .88rem; }
 .admin-empty { border: 1px dashed #b9cec2; color: #668078; padding: 28px; text-align: center; }
+.admin-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; max-width: 880px; }
+.admin-metrics article { border: 1px solid var(--admin-line); background: #fff; padding: 25px; }
+.admin-metrics b { display: block; color: var(--admin-deep); font-size: 2rem; line-height: 1; }
+.admin-metrics span { display: block; margin-top: 10px; color: #668078; font-size: .78rem; font-weight: 750; }
+.admin-lead-card { margin-bottom: 14px; border: 1px solid var(--admin-line); background: #fff; padding: 22px; }
+.admin-lead-heading { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; }
+.admin-lead-heading b, .admin-lead-heading span { display: block; }
+.admin-lead-heading b { color: var(--admin-deep); font-size: 1rem; }
+.admin-lead-heading > div > span, .admin-lead-meta { margin-top: 5px; color: #668078; font-size: .8rem; }
+.admin-score { max-width: 260px; border: 1px solid #c7dbcf; background: #f0f6f1; color: var(--admin-green); font-size: .75rem; font-weight: 800; padding: 6px 9px; text-align: right; }
+.admin-lead-card > p { margin: 16px 0 8px; color: #456058; font-size: .9rem; }
+.admin-lead-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 20px; }
+.admin-lead-grid label { color: #39564e; font-size: .75rem; font-weight: 800; }
+.admin-lead-grid input, .admin-lead-grid select, .admin-lead-grid textarea { width: 100%; min-height: 42px; margin-top: 7px; border: 1px solid #c7d8ce; background: #fff; padding: 9px 10px; }
+.admin-lead-grid textarea { min-height: 84px; resize: vertical; }
+.admin-row-actions { display: flex; flex-wrap: wrap; gap: 11px; margin-top: 18px; }
+.admin-danger { min-height: 46px; border: 1px solid #d9a79b; background: #fff; color: #a43f2b; cursor: pointer; font-size: .84rem; font-weight: 800; padding: 10px 14px; }
+.admin-danger:hover { border-color: #a43f2b; background: #fff4f1; }
 .admin-shell .admin-notice { max-width: 680px; margin: 48px auto; background: #fff5d9; color: #654b18; padding: 20px; }
-@media (max-width: 760px) { .admin-topbar { align-items: flex-start; padding: 17px 20px; } .admin-topbar .admin-brand small, .admin-user { display: none; } .admin-layout { grid-template-columns: 1fr; } .admin-sidebar { display: flex; gap: 4px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--admin-line); padding: 10px 14px; } .admin-sidebar > p { display: none; } .admin-sidebar button { width: auto; flex: 0 0 auto; border-left: 0; border-bottom: 3px solid transparent; padding: 9px 10px; white-space: nowrap; } .admin-sidebar button.selected { border-bottom-color: var(--orange); } .admin-content { padding: 32px 20px 48px; } .admin-content-heading { min-height: 92px; margin-bottom: 26px; } .admin-table article { grid-template-columns: 1fr; } .admin-table article > a, .admin-table article p { grid-column: auto; } }
+@media (max-width: 760px) { .admin-topbar { align-items: flex-start; padding: 17px 20px; } .admin-topbar .admin-brand small, .admin-user { display: none; } .admin-layout { grid-template-columns: 1fr; } .admin-sidebar { display: flex; gap: 4px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--admin-line); padding: 10px 14px; } .admin-sidebar > p { display: none; } .admin-sidebar button { width: auto; flex: 0 0 auto; border-left: 0; border-bottom: 3px solid transparent; padding: 9px 10px; white-space: nowrap; } .admin-sidebar button.selected { border-bottom-color: var(--orange); } .admin-content { padding: 32px 20px 48px; } .admin-content-heading { min-height: 92px; margin-bottom: 26px; } .admin-table article { grid-template-columns: 1fr; } .admin-table article > a, .admin-table article p { grid-column: auto; } .admin-metrics, .admin-lead-grid { grid-template-columns: 1fr; } .admin-lead-heading { display: block; } .admin-score { display: inline-block; margin-top: 12px; text-align: left; } }

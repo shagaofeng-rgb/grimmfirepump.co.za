@@ -1,57 +1,20 @@
 "use client";
-
 import Image from "next/image";
-import { FormEvent, useState } from "react";
-import type { Lead, NewsArticle, Product } from "@/lib/site-data";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { SeoReportPanel } from "@/components/seo-report-panel";
 
-type Tab = "leads" | "products" | "news" | "seo";
-const tabLabel: Record<Tab, string> = { leads: "询盘线索", products: "产品管理", news: "新闻管理", seo: "SEO 数据" };
-
-function AdminBrand() {
-  return <div className="admin-brand"><Image src="/brand/grimm-pump-logo.png" alt="GRIMM PUMP" width={48} height={48} priority /><span><strong>GRIMM PUMP</strong><small>AFRICA · MANAGEMENT</small></span></div>;
-}
-
-export function AdminConsole({ configured }: { configured: boolean }) {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [error, setError] = useState("");
-  const [tab, setTab] = useState<Tab>("leads");
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [news, setNews] = useState<NewsArticle[]>([]);
-
-  async function login(event: FormEvent) {
-    event.preventDefault();
-    setError("");
-    const response = await fetch("/api/admin/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username, password }) });
-    if (!response.ok) { setError((await response.json() as { error?: string }).error ?? "登录失败，请稍后再试。"); return; }
-    setPassword(""); setLoggedIn(true); void load("leads");
-  }
-
-  async function load(next: Tab) {
-    setTab(next); setError("");
-    if (next === "seo") return;
-    const response = await fetch(`/api/admin/${next}`);
-    if (!response.ok) { setLoggedIn(false); setError("登录状态已失效，请重新登录。"); return; }
-    const payload = await response.json() as { data: Lead[] | Product[] | NewsArticle[] };
-    if (next === "leads") setLeads(payload.data as Lead[]);
-    if (next === "products") setProducts(payload.data as Product[]);
-    if (next === "news") setNews(payload.data as NewsArticle[]);
-  }
-
-  async function create(event: FormEvent<HTMLFormElement>, type: "products" | "news") {
-    event.preventDefault(); setError("");
-    const form = event.currentTarget;
-    const response = await fetch(`/api/admin/${type}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(Object.fromEntries(new FormData(form).entries())) });
-    if (!response.ok) { setError((await response.json() as { error?: string }).error ?? "保存失败，请稍后再试。"); return; }
-    form.reset(); void load(type);
-  }
-
-  if (!configured) return <section className="admin-login-wrap"><div className="admin-login"><AdminBrand /><p className="admin-kicker">系统配置</p><h1>管理后台尚未启用</h1><p>请在生产环境中设置管理员账号、密码和会话密钥后重新部署。</p></div></section>;
-
-  if (!loggedIn) return <section className="admin-login-wrap"><form className="admin-login" onSubmit={login}><AdminBrand /><p className="admin-kicker">安全登录</p><h1>非洲站中文管理后台</h1><p>仅限获授权的内部运营人员使用。</p><label>管理员账号<input value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required /></label><label>管理员密码<input value={password} onChange={(event) => setPassword(event.target.value)} type="password" autoComplete="current-password" required /></label><button className="admin-primary" type="submit">进入后台 <span aria-hidden="true">→</span></button>{error && <p className="admin-form-message" role="alert">{error}</p>}</form></section>;
-
-  return <div className="admin-workspace"><header className="admin-topbar"><AdminBrand /><div><span className="admin-user">管理员已登录</span><button className="admin-logout" onClick={async () => { await fetch("/api/admin/logout", { method: "POST" }); setLoggedIn(false); }}>退出登录</button></div></header><div className="admin-layout"><aside className="admin-sidebar"><p>后台导航</p>{(["leads", "products", "news", "seo"] as Tab[]).map((item) => <button key={item} className={tab === item ? "selected" : ""} onClick={() => void load(item)}>{tabLabel[item]}</button>)}</aside><main className="admin-content"><div className="admin-content-heading"><p className="admin-kicker">GRIMM PUMP · AFRICA</p><h1>{tabLabel[tab]}</h1></div>{error && <p className="admin-form-message" role="alert">{error}</p>}{tab === "leads" && <section><p className="admin-intro">集中查看来自网站询盘表单的客户需求与联系方式。</p><div className="admin-table">{leads.length ? leads.map((lead) => <article key={lead.id}><div><b>{lead.name} · {lead.company}</b><span>{lead.country} · {lead.productInterest}</span></div><a href={`mailto:${lead.email}`}>{lead.email}</a><p>{lead.message}</p></article>) : <div className="admin-empty">暂时没有询盘线索。</div>}</div></section>}{tab === "products" && <section><p className="admin-intro">新增产品前请确认英文名称、分类和简介均适合对外发布。</p><form className="admin-form" onSubmit={(event) => void create(event, "products")}><label>产品名称<input name="name" required placeholder="例如：EDJ Fire Pump Set" /></label><label>产品分类<select name="category" defaultValue="Fire pump systems"><option>Fire pump systems</option><option>Water supply</option><option>Mobile pumping</option><option>Drainage</option></select></label><label>产品简介<textarea name="summary" required placeholder="简洁说明产品适用场景与配置特点" /></label><button className="admin-primary">新增并发布产品</button></form><div className="admin-table">{products.map((item) => <article key={item.id}><div><b>{item.name}</b><span>{item.category}</span></div><p>{item.summary}</p></article>)}</div></section>}{tab === "news" && <section><p className="admin-intro">自动任务每 3 小时检查一次可信 RSS 来源。未通过去重和相关性审核的内容不会自动发布。</p><button className="admin-primary" type="button" onClick={async () => { const response = await fetch("/api/admin/news/run", { method: "POST" }); const result = await response.json() as { error?: string }; setError(result.error ?? "新闻检查已执行，请查看审计记录。"); }}>立即执行新闻检查</button><form className="admin-form" onSubmit={(event) => void create(event, "news")}><label>新闻标题<input name="title" required placeholder="新闻标题" /></label><label>分类<input name="category" required placeholder="例如：Procurement guide" /></label><label>新闻摘要<textarea name="excerpt" required placeholder="新闻摘要；不得伪造事实或来源" /></label><button className="admin-primary">保存新闻草稿</button></form><div className="admin-table">{news.map((item) => <article key={item.id}><div><b>{item.title}</b><span>{item.category}</span></div><p>{item.excerpt}</p></article>)}</div></section>}{tab === "seo" && <SeoReportPanel />}</main></div></div>;
+type Tab = "overview" | "products" | "categories" | "news" | "automation" | "media" | "leads" | "forms" | "analytics" | "seo" | "pages" | "downloads" | "accounts" | "logs" | "settings";
+const labels: Record<Tab, string> = { overview:"数据概览", products:"产品管理", categories:"产品分类", news:"新闻管理", automation:"新闻自动化", media:"媒体资源", leads:"客户询盘", forms:"表单管理", analytics:"访问分析", seo:"SEO 管理", pages:"页面管理", downloads:"下载资料", accounts:"账号与权限", logs:"操作日志", settings:"系统设置" };
+const modules: Partial<Record<Tab,string>> = { categories:"categories", automation:"automation", media:"media", forms:"forms", pages:"pages", downloads:"downloads", analytics:"analytics", accounts:"accounts", logs:"logs", settings:"settings" };
+function Brand(){return <div className="admin-brand"><Image src="/brand/grimm-pump-logo.png" alt="GRIMM PUMP" width={48} height={48}/><span><strong>GRIMM PUMP</strong><small>AFRICA · MANAGEMENT</small></span></div>}
+function toSlug(value:string){return value.toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")}
+export function AdminConsole({configured}:{configured:boolean}){
+ const [username,setUsername]=useState(""); const [password,setPassword]=useState(""); const [logged,setLogged]=useState(false); const [tab,setTab]=useState<Tab>("overview"); const [data,setData]=useState<Record<string,unknown>[]>([]); const [overview,setOverview]=useState<Record<string,number>>({}); const [error,setError]=useState(""); const [loading,setLoading]=useState(false);
+ async function login(e:FormEvent){e.preventDefault();setError("");const r=await fetch("/api/admin/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username,password})});if(!r.ok){setError((await r.json()).error??"登录失败");return}setPassword("");setLogged(true);void load("overview")}
+ async function load(next:Tab){setTab(next);setError("");const endpoint=next==="overview"?"/api/admin/overview":modules[next]?`/api/admin/management/${modules[next]}`:null;if(!endpoint)return;setLoading(true);const r=await fetch(endpoint);const p=await r.json();setLoading(false);if(!r.ok){setError(p.error??"无法读取数据");return}if(next==="overview")setOverview(p.data);else setData(p.data??[])}
+ async function create(e:FormEvent<HTMLFormElement>){e.preventDefault();const mod=modules[tab];if(!mod)return;const form=e.currentTarget;const payload=Object.fromEntries(new FormData(form));const r=await fetch(`/api/admin/management/${mod}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const p=await r.json();if(!r.ok){setError(p.error??"保存失败");return}form.reset();void load(tab)}
+ if(!configured)return <section className="admin-login-wrap"><div className="admin-login"><Brand/><h1>管理后台尚未启用</h1><p>生产环境尚未配置管理员账号。</p></div></section>;
+ if(!logged)return <section className="admin-login-wrap"><form className="admin-login" onSubmit={login}><Brand/><p className="admin-kicker">安全登录</p><h1>非洲站中文管理后台</h1><p>仅限获授权的内部运营人员使用。</p><label>管理员账号<input value={username} onChange={e=>setUsername(e.target.value)} autoComplete="username" required/></label><label>管理员密码<input value={password} onChange={e=>setPassword(e.target.value)} type="password" autoComplete="current-password" required/></label><button className="admin-primary">进入后台 →</button>{error&&<p className="admin-form-message">{error}</p>}</form></section>;
+ const formFields:Partial<Record<Tab,ReactNode>>={categories:<><label>分类名称<input name="name" required onBlur={e=>{const f=e.currentTarget.form?.elements.namedItem("slug") as HTMLInputElement|null;if(f&&!f.value)f.value=toSlug(e.currentTarget.value)}}/></label><label>URL 标识<input name="slug" required placeholder="fire-pump-systems"/></label><label>说明<textarea name="description"/></label></>,media:<><label>资源名称<input name="title" required/></label><label>资源网址<input name="url" type="url" required/></label><label>替代文字<input name="alt"/></label><label>类型<select name="type"><option value="image">图片</option><option value="document">文档</option><option value="video">视频</option></select></label></>,forms:<><label>表单名称<input name="name" required/></label><label>接收邮箱<input name="email" type="email" required/></label></>,pages:<><label>页面路径<input name="path" placeholder="/about" required/></label><label>页面名称<input name="label" required/></label><label>SEO 标题<input name="title"/></label><label>SEO 描述<textarea name="description"/></label></>,downloads:<><label>资料名称<input name="title" required/></label><label>公开下载网址<input name="url" type="url" required/></label><label>说明<textarea name="description"/></label></>,accounts:<><label>姓名<input name="name" required/></label><label>工作邮箱<input name="email" type="email" required/></label><label>角色<select name="role"><option value="viewer">只读</option><option value="editor">内容编辑</option><option value="sales">销售</option><option value="admin">管理员</option></select></label></>,settings:<><label>设置键<input name="key" required placeholder="company.whatsapp"/></label><label>设置值<textarea name="value" required/></label></>};
+ return <div className="admin-workspace"><header className="admin-topbar"><Brand/><button className="admin-logout" onClick={async()=>{await fetch("/api/admin/logout",{method:"POST"});setLogged(false)}}>退出登录</button></header><div className="admin-layout"><aside className="admin-sidebar">{(Object.keys(labels) as Tab[]).map(item=><button key={item} className={tab===item?"selected":""} onClick={()=>void load(item)}>{labels[item]}</button>)}</aside><main className="admin-content"><div className="admin-content-heading"><h1>{labels[tab]}</h1></div>{error&&<p className="admin-form-message">{error}</p>}{tab==="overview"?<div className="admin-metrics">{Object.entries(overview).map(([k,v])=><article key={k}><b>{v}</b><span>{{products:"产品",categories:"分类",news:"新闻",leads:"询盘",views:"近30日访问",downloads:"下载资料"}[k]??k}</span></article>)}</div>:tab==="seo"?<SeoReportPanel/>:tab==="products"||tab==="news"||tab==="leads"?<p className="admin-intro">此模块保留原有真实数据接口。产品、新闻和询盘可在既有管理入口中继续处理；其余模块如下方实时数据管理。</p>:<>{formFields[tab]&&<form className="admin-form" onSubmit={create}>{formFields[tab]}<button className="admin-primary">保存</button></form>}<div className="admin-table">{loading?<div className="admin-empty">正在读取真实数据…</div>:data.length?data.map((row,i)=><article key={String(row.id??i)}><div><b>{String(row.name??row.title??row.path??row.email??row.action??"记录")}</b><span>{Object.entries(row).filter(([k])=>!['id','name','title','path','email','action'].includes(k)).slice(0,3).map(([k,v])=>`${k}: ${typeof v==='object'?JSON.stringify(v):String(v)}`).join(" · ")}</span></div></article>):<div className="admin-empty">暂时没有数据；首次保存或产生访问后会在这里显示。</div>}</div></>}</main></div></div>;
 }

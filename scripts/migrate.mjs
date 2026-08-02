@@ -40,6 +40,11 @@ const statements = [
   `CREATE TABLE IF NOT EXISTS seo_sync_runs (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), source text NOT NULL, status text NOT NULL CHECK (status IN ('running','succeeded','failed')), started_at timestamptz NOT NULL DEFAULT now(), finished_at timestamptz, records_synced integer NOT NULL DEFAULT 0, error_code text, error_message text, details jsonb NOT NULL DEFAULT '{}'::jsonb)`,
   `CREATE TABLE IF NOT EXISTS audit_logs (id bigserial PRIMARY KEY, user_id uuid REFERENCES users(id) ON DELETE SET NULL, action text NOT NULL, module text NOT NULL, entity_type text, entity_id text, before_summary jsonb, after_summary jsonb, ip_hash text, user_agent text, succeeded boolean NOT NULL DEFAULT true, created_at timestamptz NOT NULL DEFAULT now())`,
   `CREATE TABLE IF NOT EXISTS system_settings (key text PRIMARY KEY, value jsonb NOT NULL, updated_at timestamptz NOT NULL DEFAULT now())`,
+  `CREATE TABLE IF NOT EXISTS media_assets (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), title text NOT NULL, asset_url text NOT NULL, alt_text text NOT NULL DEFAULT '', asset_type text NOT NULL DEFAULT 'image', created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now())`,
+  `CREATE TABLE IF NOT EXISTS download_assets (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), title text NOT NULL, asset_url text NOT NULL, description text NOT NULL DEFAULT '', enabled boolean NOT NULL DEFAULT true, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now())`,
+  `CREATE TABLE IF NOT EXISTS form_definitions (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), name text NOT NULL UNIQUE, target_email text NOT NULL, enabled boolean NOT NULL DEFAULT true, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now())`,
+  `CREATE TABLE IF NOT EXISTS page_definitions (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), path text NOT NULL UNIQUE, label text NOT NULL, seo_title text, seo_description text, enabled boolean NOT NULL DEFAULT true, updated_at timestamptz NOT NULL DEFAULT now())`,
+  `CREATE TABLE IF NOT EXISTS site_events (id bigserial PRIMARY KEY, path text NOT NULL, event_type text NOT NULL DEFAULT 'page_view', created_at timestamptz NOT NULL DEFAULT now())`,
   "CREATE INDEX IF NOT EXISTS products_status_published_idx ON products(status, published, created_at DESC)",
   "CREATE INDEX IF NOT EXISTS news_status_published_idx ON news_articles(status, published_at DESC)",
   "CREATE INDEX IF NOT EXISTS news_source_fingerprint_idx ON news_articles(source_fingerprint, source_published_at DESC)",
@@ -51,6 +56,7 @@ const statements = [
   "CREATE INDEX IF NOT EXISTS leads_email_idx ON leads(email)",
   "CREATE INDEX IF NOT EXISTS audit_logs_created_idx ON audit_logs(created_at DESC)",
   "CREATE INDEX IF NOT EXISTS seo_sync_runs_source_idx ON seo_sync_runs(source, started_at DESC)",
+  "CREATE INDEX IF NOT EXISTS site_events_created_idx ON site_events(created_at DESC)",
   "INSERT INTO roles (id, name, description) VALUES ('super_admin','超级管理员','完整系统权限'),('admin','管理员','后台运营权限'),('editor','内容编辑','内容编辑与草稿权限'),('marketing','市场人员','营销、SEO与同步查看权限'),('sales','销售人员','询盘跟进权限'),('analyst','数据分析人员','数据查看权限'),('viewer','只读用户','只读权限') ON CONFLICT (id) DO NOTHING",
 ];
 

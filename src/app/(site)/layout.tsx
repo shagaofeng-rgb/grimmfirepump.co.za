@@ -1,6 +1,7 @@
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { VisitorTracker } from "@/components/visitor-tracker";
 
 export default function SiteLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <><SiteHeader /><main>{children}</main><SiteFooter /></>;
+  return <><VisitorTracker /><SiteHeader /><main>{children}</main><SiteFooter /></>;
 }

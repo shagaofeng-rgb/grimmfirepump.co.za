@@ -6,7 +6,12 @@ const cookieName = "grimm_africa_admin";
 const encoder = new TextEncoder();
 function secret(): string { return process.env.ADMIN_SESSION_SECRET ?? ""; }
 
-export function adminIsConfigured(): boolean { return Boolean(process.env.ADMIN_PASSWORD && secret()); }
+export function adminIsConfigured(): boolean { return Boolean(process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD && secret()); }
+export function verifyUsername(value: string): boolean {
+  const expected = process.env.ADMIN_USERNAME ?? "";
+  if (!expected || value.length !== expected.length) return false;
+  return timingSafeEqual(encoder.encode(value), encoder.encode(expected));
+}
 export function verifyPassword(value: string): boolean {
   const expected = process.env.ADMIN_PASSWORD ?? "";
   if (!expected || value.length !== expected.length) return false;

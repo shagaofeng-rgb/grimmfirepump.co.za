@@ -46,3 +46,16 @@ export async function POST(request: NextRequest, context: { params: Promise<{ mo
     return NextResponse.json({ success: true }, { status: 201 });
   } catch { return NextResponse.json({ error: "请检查必填字段、网址或邮箱格式；重复名称也无法保存。" }, { status: 400 }); }
 }
+
+export async function DELETE(request: NextRequest, context: { params: Promise<{ module: string }> }) {
+  if (!await isAdmin()) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const resource = (await context.params).module;
+  if (!valid(resource) || !hasDatabase()) return NextResponse.json({ error: "数据库不可用。" }, { status: 503 });
+  const id = new URL(request.url).searchParams.get("id") ?? "";
+  if (!id || ["analytics", "logs", "automation"].includes(resource)) return NextResponse.json({ error: "该记录不能删除。" }, { status: 400 });
+  const sql = getDatabase();
+  const remove = { categories: () => sql`UPDATE product_categories SET deleted_at=now() WHERE id=${id}`, media: () => sql`DELETE FROM media_assets WHERE id=${id}`, forms: () => sql`DELETE FROM form_definitions WHERE id=${id}`, pages: () => sql`DELETE FROM page_definitions WHERE id=${id}`, downloads: () => sql`DELETE FROM download_assets WHERE id=${id}`, accounts: () => sql`UPDATE users SET deleted_at=now(), active=false WHERE id=${id}`, settings: () => sql`DELETE FROM system_settings WHERE key=${id}` } as const;
+  const action = remove[resource as keyof typeof remove]; if (!action) return NextResponse.json({ error: "该模块不支持删除。" }, { status: 400 });
+  await action(); await sql`INSERT INTO audit_logs (action, module, entity_type, entity_id) VALUES ('delete', ${resource}, ${resource}, ${id})`;
+  return NextResponse.json({ success: true });
+}

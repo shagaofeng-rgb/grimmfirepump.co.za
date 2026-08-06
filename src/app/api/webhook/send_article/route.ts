@@ -26,9 +26,9 @@ export async function POST(request: NextRequest) {
   const content = safeText(input.content, 50_000);
   const authorId = safeText(input.author_id, 120) || "plugin";
   const imageUrl = safeText(input.image_url, 2048);
-  // Plugin verification must never create a record.
-  if (!title && !content) return reply(1, "验证成功");
-  if (title.length < 3 || content.length < 10) return reply(0, "文章标题或正文不符合要求", 400);
+  // Plugin verification may contain no article data or very short placeholders.
+  // A signed incomplete payload is a validation probe, never a publish request.
+  if (title.length < 3 || content.length < 10) return reply(1, "验证成功");
   if (imageUrl && !validImage(imageUrl)) return reply(0, "封面图地址必须是 http 或 https URL", 400);
   try {
     const result = await publishWebhookBlogPost({ classId, title, content, authorId, imageUrl: imageUrl || undefined });

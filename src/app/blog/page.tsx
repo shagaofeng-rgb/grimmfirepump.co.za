@@ -1,0 +1,4 @@
+import Link from "next/link";
+import { getPublishedBlogPosts } from "@/lib/blog-store";
+export const dynamic = "force-dynamic";
+export default async function BlogPage() { const posts = await getPublishedBlogPosts(); return <div className="wrap page"><h1>Blog</h1><p className="page-lead">Practical updates, project context and industry perspectives from GRIMM PUMP Africa.</p><div className="news-list">{posts.length ? posts.map((post) => <article key={post.id}><span>{post.classId} · {new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(post.publishedAt))}</span><h2><Link href={`/blog/${post.slug}`}>{post.title}</Link></h2><p>{post.content.slice(0, 240)}{post.content.length > 240 ? "…" : ""}</p><Link className="inline-link" href={`/blog/${post.slug}`}>Read article <span aria-hidden="true">→</span></Link></article>) : <p>No blog posts are published yet.</p>}</div></div>; }

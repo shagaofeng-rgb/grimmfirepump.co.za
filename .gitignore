@@ -20,6 +20,7 @@
 # local runtime content
 /data/local-site-data.json
 /logs/
+/.audit/
 
 # production
 /build

@@ -33,11 +33,17 @@ export function isFreshSourceDate(value: string | undefined, now = new Date(), l
 }
 function plain(value: string) { return value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim(); }
 function normaliseTitle(value: string) { return plain(value).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim(); }
-function configuredFeeds(): NewsFeedConfig[] {
+function configuredEnvironmentFeeds(): NewsFeedConfig[] {
   try {
     const feeds = JSON.parse(process.env.NEWS_SOURCE_FEEDS ?? "[]") as NewsFeedConfig[];
     return feeds.filter((feed) => feed.name && feed.url && canonicalizeSourceUrl(feed.url));
   } catch { return []; }
+}
+async function configuredFeeds(): Promise<NewsFeedConfig[]> {
+  const rows = await getDatabase()`SELECT publisher_name, rss_url, credibility_score, language, country, allowed_for_auto_publish FROM news_sources WHERE enabled = true ORDER BY credibility_score DESC, created_at ASC` as unknown as { publisher_name: string; rss_url: string; credibility_score: number; language: string; country: string | null; allowed_for_auto_publish: boolean }[];
+  const databaseFeeds = rows.map((row) => ({ name: row.publisher_name, url: row.rss_url, credibility: Number(row.credibility_score), language: row.language, country: row.country ?? undefined, autoPublish: row.allowed_for_auto_publish })).filter((feed) => canonicalizeSourceUrl(feed.url));
+  const knownHosts = new Set(databaseFeeds.map((feed) => new URL(feed.url).hostname));
+  return [...databaseFeeds, ...configuredEnvironmentFeeds().filter((feed) => !knownHosts.has(new URL(feed.url).hostname))];
 }
 function relevance(text: string, product: Product) {
   const words = new Set(`${product.name} ${product.category} ${product.summary} ${product.applications.join(" ")} ${product.highlights.join(" ")}`.toLowerCase().match(/[a-z]{3,}/g) ?? []);
@@ -74,7 +80,7 @@ async function createDraft(candidate: Candidate) {
   const canonical = candidate.url;
   const sourceFingerprint = hash(canonical);
   const articleId = randomUUID();
-  const status = process.env.NEWS_AUTO_PUBLISH === "true" && candidate.source.autoPublish === true ? "published" : "review_required";
+  const status = candidate.source.autoPublish === true ? "published" : "review_required";
   const title = `${candidate.title} — project implications for African pumping systems`;
   const content = draftContent(candidate);
   await sql`INSERT INTO news_articles (id, slug, title, excerpt, content, category, status, published_at, updated_published_at, language, source_name, source_url, source_title, source_author, source_publisher, canonical_source_url, source_published_at, source_fetched_at, source_fingerprint, event_fingerprint, content_hash, relevance_score, credibility_score, geo_summary, key_takeaways, related_product_ids, seo_title, seo_description, generation_model, generation_prompt_version)
@@ -104,7 +110,7 @@ export async function runNewsAutomation(trigger: "cron" | "admin" = "cron") {
     const published = Number(publishedRows[0]?.count ?? 0);
     if (published >= target) { await recordAudit(timezone, published, target, null, { trigger, result: "target_met" }); await sql`UPDATE news_jobs SET status='succeeded', completed_at=now() WHERE id=${jobId}`; return { skipped: true, reason: "daily_target_met", published }; }
     const products = await getPublishedProducts();
-    const feeds = configuredFeeds();
+    const feeds = await configuredFeeds();
     if (!feeds.length) { const message = "No approved RSS sources configured."; await recordAudit(timezone, published, target, message, { trigger }); await sql`UPDATE news_jobs SET status='failed', error_message=${message}, completed_at=now() WHERE id=${jobId}`; return { published, created: 0, error: message }; }
     const threshold = Number(process.env.NEWS_RELEVANCE_THRESHOLD ?? 0.2);
     const candidates: Candidate[] = [];

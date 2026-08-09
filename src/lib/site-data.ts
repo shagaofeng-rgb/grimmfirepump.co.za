@@ -1,3 +1,5 @@
+import { africaAdaptedProducts } from "@/lib/africa-product-catalog";
+
 export type Product = {
   id: string;
   slug: string;
@@ -54,7 +56,7 @@ export const seedStore: SiteStore = {
       applications: ["Warehouses", "Industrial plants", "Commercial buildings"],
       highlights: ["Electric + diesel + jockey configuration", "Configured around flow and pressure", "Project document path available"],
       specifications: [{ label: "Flow", value: "5–400 L/s" }, { label: "Head", value: "3–15 Bar" }, { label: "Caliber", value: "65–250 mm" }, { label: "Material", value: "HT200, SS304, Bronze" }],
-      image: "https://www.grimmfirepump.com/_next/image?url=%2Fassets%2Fsynced%2Fproducts%2Fedj-fire-pump-set.jpg&w=1200&q=80", published: true,
+      image: "/images/products/edj-fire-pump-set.jpg", published: true,
     },
     {
       id: "diesel-jockey", slug: "diesel-engine-plus-jockey-pump-set", name: "Diesel Engine + Jockey Pump Set", category: "Fire pump systems",
@@ -62,7 +64,7 @@ export const seedStore: SiteStore = {
       applications: ["Remote projects", "Industrial sites", "Oil & gas support"],
       highlights: ["Diesel main-pump option", "Jockey pressure maintenance", "Configuration support before quotation"],
       specifications: [{ label: "Flow", value: "5–400 L/s" }, { label: "Head", value: "3–15 Bar" }, { label: "Pressure", value: "0.3–1.5 MPa" }],
-      image: "https://www.grimmfirepump.com/_next/image?url=%2Fassets%2Fsynced%2Fproducts%2Fdiesel-engine-plus-jockey-pump-set.jpg&w=1200&q=80", published: true,
+      image: "/images/products/diesel-engine-plus-jockey-pump-set.jpg", published: true,
     },
     {
       id: "long-shaft-fire-pump", slug: "electric-long-shaft-fire-pump", name: "Electric Long-Shaft Fire Pump", category: "Fire pump systems",
@@ -70,7 +72,7 @@ export const seedStore: SiteStore = {
       applications: ["Water intake", "Industrial utilities", "Specific installation conditions"],
       highlights: ["Electric long-shaft configuration", "Project application review", "Related diesel option available"],
       specifications: [{ label: "System", value: "Electric long-shaft fire pump" }, { label: "Selection", value: "Subject to project conditions" }],
-      image: "https://www.grimmfirepump.com/_next/image?url=%2Fassets%2Fsynced%2Fproducts%2Felectric-long-shaft-fire-pump.png&w=1200&q=80", published: true,
+      image: "/images/products/electric-long-shaft-fire-pump.png", published: true,
     },
     {
       id: "water-supply", slug: "frequency-conversion-water-supply-equipment", name: "Frequency Conversion Water Supply Equipment", category: "Water supply",
@@ -78,7 +80,7 @@ export const seedStore: SiteStore = {
       applications: ["Commercial buildings", "Utility projects", "Pressure boosting"],
       highlights: ["Variable-frequency water supply", "Building and utility applications", "Configurable project scope"],
       specifications: [{ label: "Category", value: "Water supply equipment" }, { label: "Use", value: "Building and utility projects" }],
-      image: "https://www.grimmfirepump.com/_next/image?url=%2Fassets%2Fsynced%2Fproducts%2Ffrequency-conversion-water-supply-equipment.jpg&w=1200&q=80", published: true,
+      image: "/images/products/frequency-conversion-water-supply-equipment.jpg", published: true,
     },
     {
       id: "mobile-pump-trailer", slug: "diesel-engine-irrigation-pump-trailer-type", name: "Diesel Engine Pump Trailer", category: "Mobile pumping",
@@ -86,9 +88,9 @@ export const seedStore: SiteStore = {
       applications: ["Emergency drainage", "Irrigation", "Temporary water transfer"],
       highlights: ["Trailer-mounted format", "Diesel-powered pumping", "Mobile project support"],
       specifications: [{ label: "Category", value: "Mobile pump trailer" }, { label: "Use", value: "Emergency, irrigation and transfer" }],
-      image: "https://www.grimmfirepump.com/_next/image?url=%2Fassets%2Fsynced%2Fproducts%2Fdiesel-engine-irrigation-pump-trailer-type.jpg&w=1200&q=80", published: true,
+      image: "/images/products/diesel-engine-irrigation-pump-trailer-type.jpg", published: true,
     },
-  ],
+  ...africaAdaptedProducts],
   news: [
     {
       id: "africa-project-planning", slug: "fire-water-project-planning-africa", title: "How to start defining a fire-water package for an African project", category: "Procurement guide", status: "published", publishedAt: "2026-07-10T00:00:00.000Z",

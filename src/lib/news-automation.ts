@@ -96,6 +96,9 @@ async function recordAudit(timezone: string, published: number, target: number, 
     ON CONFLICT (audit_date, timezone) DO UPDATE SET published_count = EXCLUDED.published_count, missing_count = EXCLUDED.missing_count, status = EXCLUDED.status, last_error = EXCLUDED.last_error, details = EXCLUDED.details, checked_at = now(), updated_at = now()`;
 }
 export async function runNewsAutomation(trigger: "cron" | "admin" = "cron") {
+  // Editorial policy: automated source fetching, rewriting, product linking and
+  // publication are disabled. Existing records remain untouched for review.
+  if (process.env.NEWS_AUTOMATION_ENABLED !== "true") return { skipped: true, reason: "disabled_by_editorial_policy", trigger };
   const sql = getDatabase();
   const timezone = process.env.NEWS_TIMEZONE ?? "Africa/Johannesburg";
   const target = Math.max(1, Number(process.env.NEWS_DAILY_TARGET ?? 4));

@@ -1,2 +1,2 @@
 import type { MetadataRoute } from "next";
-export default function robots(): MetadataRoute.Robots { const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://grimmfirepump.co.za"; return { rules: { userAgent: "*", allow: "/", disallow: "/admin" }, sitemap: `${base}/sitemap.xml` }; }
+export default function robots(): MetadataRoute.Robots { const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://grimmfirepump.co.za"; return { rules: [{ userAgent: "Googlebot", allow: "/", disallow: "/admin" }, { userAgent: "Bingbot", allow: "/", disallow: "/admin" }, { userAgent: "OAI-SearchBot", allow: "/", disallow: "/admin" }, { userAgent: "GPTBot", disallow: "/" }, { userAgent: "*", allow: "/", disallow: "/admin" }], sitemap: `${base}/sitemap.xml` }; }

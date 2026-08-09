@@ -1,0 +1,3 @@
+import { pageMetadata } from "@/lib/seo";
+export const metadata = pageMetadata("Cookie Policy", "Cookie information for GRIMM PUMP Africa.", "/cookie-policy");
+export default function CookiePolicy() { return <article className="wrap page article"><h1>Cookie Policy</h1><p>This policy requires company/legal confirmation before production legal reliance.</p><p>The site may use essential session and measurement technologies to operate pages and understand aggregate usage. Any non-essential analytics or advertising technology should be enabled only after the applicable consent configuration is confirmed.</p></article>; }

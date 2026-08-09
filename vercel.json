@@ -1,5 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "alias": ["grimmfirepump.co.za", "www.grimmfirepump.co.za"],
-  "crons": [{ "path": "/api/cron/news", "schedule": "0 */3 * * *" }]
+  "alias": ["grimmfirepump.co.za", "www.grimmfirepump.co.za"]
 }

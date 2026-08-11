@@ -15,6 +15,7 @@ type SearchConsoleRow = {
 };
 
 type SearchConsoleResponse = { rows?: SearchConsoleRow[]; error?: { message?: string } };
+type GoogleErrorResponse = { error?: { code?: number; message?: string } };
 
 function getServiceAccount(): ServiceAccount {
   const raw = process.env.GOOGLE_SEARCH_CONSOLE_SERVICE_ACCOUNT_JSON;
@@ -39,7 +40,7 @@ async function getAccessToken(account: ServiceAccount): Promise<string> {
     toBase64Url(JSON.stringify({ alg: "RS256", typ: "JWT" })),
     toBase64Url(JSON.stringify({
       iss: account.client_email,
-      scope: "https://www.googleapis.com/auth/webmasters.readonly",
+      scope: "https://www.googleapis.com/auth/webmasters",
       aud: "https://oauth2.googleapis.com/token",
       iat: now,
       exp: now + 3600,
@@ -63,6 +64,25 @@ async function getAccessToken(account: ServiceAccount): Promise<string> {
   return payload.access_token;
 }
 
+function searchConsoleProperty(): string {
+  return process.env.GOOGLE_SEARCH_CONSOLE_SITE_URL ?? "https://grimmfirepump.co.za/";
+}
+
+export async function submitSitemapToSearchConsole() {
+  const property = searchConsoleProperty();
+  const sitemap = new URL("/sitemap.xml", property).toString();
+  const token = await getAccessToken(getServiceAccount());
+  const response = await fetch(
+    `https://searchconsole.googleapis.com/webmasters/v3/sites/${encodeURIComponent(property)}/sitemaps/${encodeURIComponent(sitemap)}`,
+    { method: "PUT", headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
+  );
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({})) as GoogleErrorResponse;
+    throw new Error(payload.error?.message ?? `Google sitemap submission failed (${response.status}).`);
+  }
+  return { property, sitemap, submittedAt: new Date().toISOString(), status: response.status };
+}
+
 function isoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
@@ -73,7 +93,7 @@ export async function getSearchConsoleReport(requestedDays: number) {
   end.setUTCDate(end.getUTCDate() - 3);
   const start = new Date(end);
   start.setUTCDate(start.getUTCDate() - days + 1);
-  const property = process.env.GOOGLE_SEARCH_CONSOLE_SITE_URL ?? "https://grimmfirepump.co.za/";
+  const property = searchConsoleProperty();
   const token = await getAccessToken(getServiceAccount());
 
   const response = await fetch(

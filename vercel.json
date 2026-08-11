@@ -1,4 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "alias": ["grimmfirepump.co.za", "www.grimmfirepump.co.za"]
+  "alias": ["grimmfirepump.co.za", "www.grimmfirepump.co.za"],
+  "crons": [
+    {
+      "path": "/api/cron/google-seo",
+      "schedule": "0 2 */3 * *"
+    }
+  ]
 }

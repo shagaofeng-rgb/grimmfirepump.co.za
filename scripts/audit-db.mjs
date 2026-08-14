@@ -14,7 +14,7 @@ for (const file of [".env.production.local", ".env.local"]) {
 
 if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required.");
 const sql = neon(process.env.DATABASE_URL);
-const tables = ["products", "product_categories", "blog_posts", "blog_categories", "news_articles", "leads", "seo_sync_runs", "news_jobs", "news_publication_audits", "audit_logs", "system_settings", "media_assets", "download_assets", "form_definitions", "page_definitions", "site_events"];
+const tables = ["products", "product_categories", "blog_posts", "blog_categories", "news_articles", "news_sources", "news_candidates", "news_ingest_runs", "news_publication_runs", "news_delivery_checks", "leads", "seo_sync_runs", "news_jobs", "news_publication_audits", "audit_logs", "system_settings", "media_assets", "download_assets", "form_definitions", "page_definitions", "site_events"];
 const counts = {};
 for (const table of tables) {
   const rows = await sql.query(`SELECT count(*)::int AS count FROM ${table}`);
@@ -34,6 +34,10 @@ const checks = {
     jobs: await sql.query("SELECT status, count(*)::int AS count FROM news_jobs GROUP BY status ORDER BY status"),
   },
   recentJobs: await sql.query("SELECT job_type, status, retry_count, started_at, completed_at, left(error_message, 160) AS error_message FROM news_jobs ORDER BY created_at DESC LIMIT 10"),
+  recentIngestRuns: await sql.query("SELECT status, started_at, completed_at, discovered_count, candidate_count, rejected_count, left(error_message, 160) AS error_message FROM news_ingest_runs ORDER BY started_at DESC LIMIT 10"),
+  recentPublicationRuns: await sql.query("SELECT status, started_at, completed_at, left(error_message, 160) AS error_message, details FROM news_publication_runs ORDER BY started_at DESC LIMIT 10"),
+  candidateStatuses: await sql.query("SELECT status, count(*)::int AS count FROM news_candidates GROUP BY status ORDER BY status"),
+  sources: await sql.query("SELECT publisher_name, rss_url, enabled, site_id, last_fetched_at, failure_count FROM news_sources ORDER BY publisher_name"),
   indexes: await sql.query("SELECT tablename, indexname, indexdef FROM pg_indexes WHERE schemaname = 'public' ORDER BY tablename, indexname"),
 };
 const backup = { createdAt: new Date().toISOString(), purpose: "Pre-audit database structure and count snapshot", counts, schema, checks };

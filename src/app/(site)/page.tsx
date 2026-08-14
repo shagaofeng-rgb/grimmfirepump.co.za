@@ -1,21 +1,107 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ProductCard } from "@/components/product-card";
-import { getPublishedProducts } from "@/lib/content-store";
 import { pageMetadata } from "@/lib/seo";
 
-export const metadata = pageMetadata("Fire Pump Systems for African Projects", "Fire pump packages and water systems for African industrial and commercial projects. Final selection is subject to project configuration.", "/");
+export const metadata = pageMetadata(
+  "Fire Pump Systems for African Projects",
+  "Fire pump packages and water systems for African industrial and commercial projects. Final selection is subject to project configuration.",
+  "/",
+);
 
-export default async function Home() {
-  const products = await getPublishedProducts();
-  const priority = ["edj-fire-pump-set", "diesel-jockey", "long-shaft-fire-pump"];
-  const featured = priority.map((id) => products.find((product) => product.id === id)).filter((product): product is NonNullable<typeof product> => Boolean(product));
+const productFamilies = [
+  { title: "EDJ Fire Pump Sets", description: "End-suction fire pumps for electrically driven systems. Designed for a wide range of occupancies and hazards.", image: "/images/home-concept/edj-fire-pump.png", href: "/products/edj-fire-pump-set", action: "View EDJ range" },
+  { title: "Diesel + Jockey Packages", description: "Complete fire pump packages with diesel driver and jockey pump. Built, tested and ready for project configuration.", image: "/images/home-concept/diesel-jockey-package.png", href: "/products/diesel-engine-plus-jockey-pump-set", action: "View package configurations" },
+  { title: "Booster Systems", description: "Booster sets for pressure boosting and water supply in commercial, industrial and infrastructure applications.", image: "/images/home-concept/booster-system.png", href: "/water-supply-booster-systems", action: "View booster solutions" },
+];
+
+const deliverySteps = [
+  ["01", "Enquire", "Share your project requirements and application details.", "/images/home-concept/process-enquire.png"],
+  ["02", "Engineer", "We review size and propose the right system configuration.", "/images/home-concept/process-engineer.png"],
+  ["03", "Confirm & Build", "Documentation is confirmed. Systems are assembled and tested.", "/images/home-concept/process-confirm.png"],
+  ["04", "Pack & Ship", "Export packing, customs documentation and shipment arranged.", "/images/home-concept/process-pack.png"],
+  ["05", "Deliver & Support", "Delivery to site and support for successful commissioning.", "/images/home-concept/process-deliver.png"],
+];
+
+const proofItems = [
+  ["Exporting to African markets", "Projects across multiple sectors", "/images/home-concept/proof-export.png"],
+  ["Built for duty", "Industrial-grade components and robust assemblies", "/images/home-concept/proof-duty.png"],
+  ["Engineered to project", "System sizing, documentation and testing aligned to project requirements", "/images/home-concept/proof-engineering.png"],
+  ["Export ready", "Secure packaging and logistics coordination for international delivery", "/images/home-concept/proof-export-ready.png"],
+];
+
+export default function Home() {
   return <>
-    <section className="hero"><Image src="/images/africa-fire-pump-hero.png" alt="Concept visual of a fire-pump installation serving an African industrial project" fill priority sizes="100vw" className="hero-media" /><div className="hero-shade" /><div className="wrap hero-content"><h1>Fire Pump Systems for African Industrial and Commercial Projects</h1><p>Configured diesel, electric and jockey pump packages for industrial, commercial and infrastructure projects across Africa.</p><div className="hero-actions"><Link href="/contact" className="cta">Discuss your project <span aria-hidden="true">→</span></Link><Link href="/fire-pump-systems" className="ghost-link">View fire pump systems <span aria-hidden="true">→</span></Link></div><div className="hero-facts"><span><b>EDJ · DJ · EJ</b>Complete package options</span><span><b>Project-specific duty</b>Subject to engineering review</span><span><b>Export-focused</b>For African project buyers</span></div></div></section>
-    <section className="section intro"><div className="wrap two-column"><div><h2>Start with the realities on site.</h2><p>We help project teams define a fire-pump package around water supply, power availability, duty/standby needs and the documentation required before shipment.</p><Link href="/contact" className="inline-link">Tell us your requirements <span aria-hidden="true">→</span></Link></div><div className="number-list"><article><div><h3>Power-resilient options</h3><p>Electric, diesel and combined configurations for planned and backup operation.</p></div></article><article><div><h3>Project documentation</h3><p>Selection data, catalogues and testing information for engineering review.</p></div></article><article><div><h3>Direct export dialogue</h3><p>Discuss pump selection, delivery scope and your timeline with GRIMM sales.</p></div></article></div></div></section>
-    <section className="section wrap"><div className="section-heading"><h2>Fire pump systems first. Project configuration second.</h2><p>Start with EDJ, diesel + jockey and long-shaft fire-pump configurations. Booster and mobile pumping remain available as separate product lines.</p></div><div className="product-grid">{featured.map((product) => <ProductCard key={product.id} product={product} />)}</div><Link className="inline-link all-link" href="/products">Explore all products <span aria-hidden="true">→</span></Link></section>
-    <section className="section dark"><div className="wrap applications"><div><h2>Built around project conditions, not catalogue pages.</h2><p>Start a procurement conversation with the risk, operating conditions and application your site needs to address.</p><Link href="/applications" className="cta outline">Explore applications <span aria-hidden="true">→</span></Link></div><div className="application-grid">{[["Logistics & warehousing", "Fire protection support for storage, distribution and industrial facilities."], ["Commercial buildings", "Configured water and fire-pump systems for expanding urban development."], ["Industrial processing", "Standby-oriented pump packages for plants, workshops and utilities."], ["Water & emergency response", "Mobile pumping and drainage options for temporary transfer needs."]].map(([title, text]) => <article key={title}><h3>{title}</h3><p>{text}</p></article>)}</div></div></section>
-    <section className="section wrap factory"><div className="factory-image"><Image src="https://www.grimmfirepump.com/_next/image?url=%2Fassets%2Ffactory%2Ffactory-assembly.webp&w=1200&q=80" alt="GRIMM PUMP assembly workshop" fill sizes="(max-width: 700px) 100vw, 55vw" /></div><div><h2>Technical clarity before shipment.</h2><p>GRIMM PUMP is the fire-pump systems brand of Grimm Water Treatment (Zhejiang) Co.,Ltd. This export site presents product information for African project buyers; final selection and documentation are available on request.</p><Link href="/about" className="inline-link">About GRIMM PUMP <span aria-hidden="true">→</span></Link></div></section>
-    <section className="quote-banner"><div className="wrap"><h2>Let’s define what your site needs.</h2><p>Share the basic requirement and continue the conversation directly with the GRIMM PUMP team.</p><Link href="/contact" className="cta">Send an enquiry <span aria-hidden="true">→</span></Link></div></section>
+    <section className="reference-hero">
+      <Image src="/images/home-concept/hero-fire-pump.png" alt="Red diesel fire-pump system in an industrial test bay" fill priority sizes="100vw" className="reference-hero-image" />
+      <div className="reference-hero-shade" />
+      <div className="reference-wrap reference-hero-content">
+        <h1>Fire Pump Systems for African Projects</h1>
+        <div className="reference-rule" />
+        <p>Engineered fire protection and water supply equipment. Built for reliability. Ready for export.</p>
+        <div className="reference-hero-actions">
+          <Link className="reference-primary" href="/contact">Request a project review</Link>
+          <Link className="reference-text-action" href="/fire-pump-systems">Explore pump systems</Link>
+        </div>
+      </div>
+    </section>
+
+    <section className="reference-proof">
+      <div className="reference-wrap reference-proof-grid">
+        {proofItems.map(([title, body, icon]) => <article key={title}><Image src={icon} alt="" width={48} height={48} /><div><h2>{title}</h2><p>{body}</p></div></article>)}
+      </div>
+    </section>
+
+    <section className="reference-products">
+      <div className="reference-wrap">
+        <p className="reference-label">Product family selector</p>
+        <h2>Systems for Fire Protection and Water Supply</h2>
+        <p className="reference-section-intro">Choose a product family to explore typical configurations, key components and application notes.</p>
+        <div className="reference-product-grid">
+          {productFamilies.map((product) => <article key={product.title} className="reference-product-card">
+            <Image src={product.image} alt={product.title} width={720} height={540} sizes="(max-width: 760px) 100vw, 33vw" />
+            <h3>{product.title}</h3>
+            <p>{product.description}</p>
+            <Link href={product.href}>{product.action}</Link>
+          </article>)}
+        </div>
+      </div>
+    </section>
+
+    <section className="reference-process">
+      <div className="reference-wrap">
+        <p className="reference-label">Export process. Built around African projects.</p>
+        <div className="reference-process-grid">
+          {deliverySteps.map(([number, title, body, icon]) => <article key={number}>
+            <Image src={icon} alt="" width={48} height={48} />
+            <span>{number}</span>
+            <h3>{title}</h3>
+            <p>{body}</p>
+          </article>)}
+        </div>
+      </div>
+    </section>
+
+    <section className="reference-testing">
+      <div className="reference-wrap reference-testing-grid">
+        <div>
+          <p className="reference-label">Documentation &amp; test</p>
+          <h2>Tested Systems. Documented Confidence.</h2>
+          <p>Every system is assembled and tested before dispatch. We provide project-specific documentation packages to support approvals, installation and handover.</p>
+          <ul>
+            <li>Hydrostatic test of pump casing</li>
+            <li>Performance test to verified duty</li>
+            <li>Factory Acceptance Test (FAT)</li>
+            <li>Operation and maintenance manuals</li>
+            <li>Spare parts lists and drawings</li>
+            <li>Packing lists and certificates of compliance</li>
+          </ul>
+        </div>
+        <Image src="/images/home-concept/test-bay.png" alt="Fire-pump test bay" width={1200} height={800} sizes="(max-width: 900px) 100vw, 60vw" className="reference-test-image" />
+      </div>
+      <div className="reference-wrap reference-contact-strip">
+        <div><h2>Have a project to discuss?</h2><p>Our engineering team is ready to review your requirements.</p></div>
+        <Link className="reference-primary" href="/contact">Request a project review</Link>
+      </div>
+    </section>
   </>;
 }

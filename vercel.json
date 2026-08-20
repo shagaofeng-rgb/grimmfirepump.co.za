@@ -2,17 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "alias": ["grimmfirepump.co.za", "www.grimmfirepump.co.za"],
   "crons": [
-    {
-      "path": "/api/cron/news-ingest",
-      "schedule": "0 */12 * * *"
-    },
-    {
-      "path": "/api/cron/news-publish",
-      "schedule": "0 2 */2 * *"
-    },
-    {
-      "path": "/api/cron/google-seo",
-      "schedule": "0 2 */3 * *"
-    }
+    { "path": "/api/cron/news-ingest", "schedule": "10 6 * * *" },
+    { "path": "/api/cron/news-publish", "schedule": "45 7 * * *" },
+    { "path": "/api/cron/google-seo", "schedule": "0 2 */3 * *" }
   ]
 }

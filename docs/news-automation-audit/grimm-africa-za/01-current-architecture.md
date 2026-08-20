@@ -1,8 +1,16 @@
-# Current architecture — grimm-africa-za
+# GRIMM PUMP Africa News automation implementation baseline
 
-- Site: `grimm-africa-za`, `https://grimmfirepump.co.za`, English, `Africa/Johannesburg`.
-- Framework: Next.js App Router; database: Neon PostgreSQL; deployment: Vercel.
-- News is stored in `news_articles`, candidates in `news_candidates`, job logs in `news_jobs`; Blog is stored separately in `blog_posts`.
-- Existing `/api/cron/news` and `/api/admin/news/run` deliberately return HTTP 410. The former worker mixed RSS fetching, copy generation, product linking and optional publication in one code path, so it is not compliant with the required 12h ingest / 48h publish separation.
-- Existing public routes: `/news`, `/news/[slug]`, `/news-sitemap.xml`, `/rss.xml`; Blog routes are `/blog`, `/blog/[slug]`.
-- Existing production configuration had no News cron entry. This change introduces two separate Vercel schedules; activation remains subject to source and production credential validation.
+- Site ID: `grimm-africa-za`
+- Backup branch: `backup/pre-daily-news-automation-20260820`
+- Timezone: `Africa/Johannesburg`
+- Schedules: ingest 08:10 local; publish 09:45 local; Google sitemap submission every 3 days.
+- News and Blog: separate tables, routes and APIs. Blog automation is not permitted.
+- Safety gate: production publication requires `NEWS_AUTO_PUBLISH=true`; otherwise the publish worker returns a non-publishing disabled result.
+- Content gate still required before activation: a fully verified source catalog, source rights record, fact lock, humanizer/fact regression, similarity check, and browser-visible delivery check.
+- Historical News and Blog records have not been deleted or migrated.
+
+## Source-catalog import state
+The user-provided 300-source directory is retained as an input record to be imported before enabling publication. It must not be treated as validated: each source needs domain, robots/feed availability, tier, restriction and provenance validation. No unverified or copyright-unclear source may publish.
+
+## Rollback
+Redeploy commit `0feeb4ddc1b2cc38b3a26a116790f449a025c308` or reset Vercel to the previous production deployment. Database schema is unchanged in this baseline.

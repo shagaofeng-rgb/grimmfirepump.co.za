@@ -58,7 +58,7 @@ export default function Home() {
         <p className="reference-section-intro">Choose a product family to explore typical configurations, key components and application notes.</p>
         <div className="reference-product-grid">
           {productFamilies.map((product) => <article key={product.title} className="reference-product-card">
-            <Image src={product.image} alt={product.title} width={720} height={540} sizes="(max-width: 760px) 100vw, 33vw" />
+            <Link href={product.href} className="reference-product-image-link"><Image src={product.image} alt={product.title} width={720} height={540} sizes="(max-width: 760px) 100vw, 33vw" /></Link>
             <h3>{product.title}</h3>
             <p>{product.description}</p>
             <Link href={product.href}>{product.action}</Link>

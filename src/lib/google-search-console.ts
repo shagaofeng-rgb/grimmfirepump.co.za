@@ -14,24 +14,98 @@ type SearchConsoleRow = {
   position: number;
 };
 
-type SearchConsoleResponse = { rows?: SearchConsoleRow[]; error?: { message?: string } };
-type GoogleErrorResponse = { error?: { code?: number; message?: string } };
+type SearchConsoleResponse = { rows?: SearchConsoleRow[] };
+
+export type GoogleSearchConsoleFailureCode =
+  | "credentials_missing"
+  | "credentials_invalid"
+  | "oauth_failed"
+  | "property_access_denied"
+  | "property_not_found"
+  | "sitemap_rejected"
+  | "rate_limited"
+  | "google_service_unavailable"
+  | "network_failed"
+  | "unknown_failure";
+
+export class GoogleSearchConsoleError extends Error {
+  readonly code: GoogleSearchConsoleFailureCode;
+  readonly httpStatus?: number;
+
+  constructor(code: GoogleSearchConsoleFailureCode, message: string, httpStatus?: number) {
+    super(message);
+    this.name = "GoogleSearchConsoleError";
+    this.code = code;
+    this.httpStatus = httpStatus;
+  }
+}
 
 function getServiceAccount(): ServiceAccount {
   const raw = process.env.GOOGLE_SEARCH_CONSOLE_SERVICE_ACCOUNT_JSON;
-  if (!raw) throw new Error("Google Search Console credentials are not configured.");
+  if (!raw) {
+    throw new GoogleSearchConsoleError(
+      "credentials_missing",
+      "Google Search Console service-account credentials are not configured.",
+    );
+  }
 
   try {
     const account = JSON.parse(raw) as Partial<ServiceAccount>;
-    if (!account.client_email || !account.private_key) throw new Error("Missing service-account fields.");
+    if (!account.client_email || !account.private_key) throw new Error("missing service-account fields");
     return account as ServiceAccount;
   } catch {
-    throw new Error("Google Search Console credentials are invalid.");
+    throw new GoogleSearchConsoleError(
+      "credentials_invalid",
+      "Google Search Console service-account credentials are invalid.",
+    );
   }
 }
 
 function toBase64Url(value: string): string {
   return Buffer.from(value).toString("base64url");
+}
+
+function errorForGoogleResponse(status: number, context: "oauth" | "sitemap" | "report") {
+  if (status === 401 || status === 403) {
+    return new GoogleSearchConsoleError(
+      "property_access_denied",
+      "The Google service account does not have access to the configured Search Console property.",
+      status,
+    );
+  }
+  if (status === 404) {
+    return new GoogleSearchConsoleError(
+      "property_not_found",
+      "The configured Search Console property or sitemap could not be found.",
+      status,
+    );
+  }
+  if (status === 429) {
+    return new GoogleSearchConsoleError(
+      "rate_limited",
+      "Google temporarily rate-limited the Search Console request.",
+      status,
+    );
+  }
+  if (status >= 500) {
+    return new GoogleSearchConsoleError(
+      "google_service_unavailable",
+      "Google Search Console is temporarily unavailable.",
+      status,
+    );
+  }
+  if (context === "oauth") {
+    return new GoogleSearchConsoleError(
+      "oauth_failed",
+      "Google OAuth authentication failed for the service account.",
+      status,
+    );
+  }
+  return new GoogleSearchConsoleError(
+    "sitemap_rejected",
+    "Google rejected the Search Console request.",
+    status,
+  );
 }
 
 async function getAccessToken(account: ServiceAccount): Promise<string> {
@@ -47,39 +121,104 @@ async function getAccessToken(account: ServiceAccount): Promise<string> {
     })),
   ].join(".");
 
-  const signature = createSign("RSA-SHA256").update(unsignedToken).end().sign(account.private_key, "base64url");
-  const response = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      assertion: `${unsignedToken}.${signature}`,
-    }),
-    cache: "no-store",
-  });
+  let signature: string;
+  try {
+    signature = createSign("RSA-SHA256").update(unsignedToken).end().sign(account.private_key, "base64url");
+  } catch {
+    throw new GoogleSearchConsoleError(
+      "credentials_invalid",
+      "Google Search Console service-account credentials are invalid.",
+    );
+  }
 
-  if (!response.ok) throw new Error("Google OAuth authentication failed.");
-  const payload = await response.json() as { access_token?: string };
-  if (!payload.access_token) throw new Error("Google OAuth returned no access token.");
+  let response: Response;
+  try {
+    response = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+        assertion: unsignedToken + "." + signature,
+      }),
+      cache: "no-store",
+    });
+  } catch {
+    throw new GoogleSearchConsoleError(
+      "network_failed",
+      "The Google OAuth endpoint could not be reached.",
+    );
+  }
+
+  if (!response.ok) throw errorForGoogleResponse(response.status, "oauth");
+  const payload = await response.json().catch(() => ({})) as { access_token?: string };
+  if (!payload.access_token) {
+    throw new GoogleSearchConsoleError(
+      "oauth_failed",
+      "Google OAuth returned no access token.",
+      response.status,
+    );
+  }
   return payload.access_token;
 }
 
 function searchConsoleProperty(): string {
-  return process.env.GOOGLE_SEARCH_CONSOLE_SITE_URL ?? "https://grimmfirepump.co.za/";
+  const value = (process.env.GOOGLE_SEARCH_CONSOLE_SITE_URL ?? "https://grimmfirepump.co.za/").trim();
+  if (value.startsWith("sc-domain:")) return value;
+
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:" || !url.hostname) throw new Error("invalid property");
+    return url.toString();
+  } catch {
+    throw new GoogleSearchConsoleError(
+      "credentials_invalid",
+      "GOOGLE_SEARCH_CONSOLE_SITE_URL must be an HTTPS URL-prefix property or an sc-domain property.",
+    );
+  }
+}
+
+function sitemapUrl(): string {
+  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://grimmfirepump.co.za").trim();
+  try {
+    const url = new URL(base);
+    if (url.protocol !== "https:" || !url.hostname) throw new Error("invalid site URL");
+    return new URL("/sitemap.xml", url).toString();
+  } catch {
+    throw new GoogleSearchConsoleError(
+      "credentials_invalid",
+      "NEXT_PUBLIC_SITE_URL must be a valid HTTPS site URL.",
+    );
+  }
+}
+
+export function asGoogleSearchConsoleError(error: unknown): GoogleSearchConsoleError {
+  if (error instanceof GoogleSearchConsoleError) return error;
+  return new GoogleSearchConsoleError(
+    "unknown_failure",
+    "Google Search Console sitemap submission failed unexpectedly.",
+  );
 }
 
 export async function submitSitemapToSearchConsole() {
   const property = searchConsoleProperty();
-  const sitemap = new URL("/sitemap.xml", property).toString();
+  const sitemap = sitemapUrl();
   const token = await getAccessToken(getServiceAccount());
-  const response = await fetch(
-    `https://searchconsole.googleapis.com/webmasters/v3/sites/${encodeURIComponent(property)}/sitemaps/${encodeURIComponent(sitemap)}`,
-    { method: "PUT", headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
-  );
-  if (!response.ok) {
-    const payload = await response.json().catch(() => ({})) as GoogleErrorResponse;
-    throw new Error(payload.error?.message ?? `Google sitemap submission failed (${response.status}).`);
+
+  let response: Response;
+  try {
+    response = await fetch(
+      "https://searchconsole.googleapis.com/webmasters/v3/sites/" + encodeURIComponent(property) + "/sitemaps/" + encodeURIComponent(sitemap),
+      { method: "PUT", headers: { Authorization: "Bearer " + token }, cache: "no-store" },
+    );
+  } catch {
+    throw new GoogleSearchConsoleError(
+      "network_failed",
+      "The Google Search Console sitemap endpoint could not be reached.",
+    );
   }
+
+  if (!response.ok) throw errorForGoogleResponse(response.status, "sitemap");
+
   return { property, sitemap, submittedAt: new Date().toISOString(), status: response.status };
 }
 
@@ -96,26 +235,32 @@ export async function getSearchConsoleReport(requestedDays: number) {
   const property = searchConsoleProperty();
   const token = await getAccessToken(getServiceAccount());
 
-  const response = await fetch(
-    `https://searchconsole.googleapis.com/webmasters/v3/sites/${encodeURIComponent(property)}/searchAnalytics/query`,
-    {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        startDate: isoDate(start),
-        endDate: isoDate(end),
-        dimensions: ["query", "page"],
-        rowLimit: 100,
-        dataState: "final",
-      }),
-      cache: "no-store",
-    },
-  );
-
-  const payload = await response.json() as SearchConsoleResponse;
-  if (!response.ok) {
-    throw new Error(payload.error?.message ?? "Google Search Console query failed.");
+  let response: Response;
+  try {
+    response = await fetch(
+      "https://searchconsole.googleapis.com/webmasters/v3/sites/" + encodeURIComponent(property) + "/searchAnalytics/query",
+      {
+        method: "POST",
+        headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          startDate: isoDate(start),
+          endDate: isoDate(end),
+          dimensions: ["query", "page"],
+          rowLimit: 100,
+          dataState: "final",
+        }),
+        cache: "no-store",
+      },
+    );
+  } catch {
+    throw new GoogleSearchConsoleError(
+      "network_failed",
+      "The Google Search Console reporting endpoint could not be reached.",
+    );
   }
+
+  const payload = await response.json().catch(() => ({})) as SearchConsoleResponse;
+  if (!response.ok) throw errorForGoogleResponse(response.status, "report");
 
   return {
     source: "Google Search Console",

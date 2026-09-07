@@ -191,6 +191,17 @@ function sitemapUrl(): string {
   }
 }
 
+function propertyCandidates() {
+  const configured = searchConsoleProperty();
+  const canonicalUrl = new URL(sitemapUrl()).origin + "/";
+  const domainProperty = "sc-domain:" + new URL(sitemapUrl()).hostname;
+  return [...new Set([configured, domainProperty, canonicalUrl])];
+}
+
+function canFallback(error: GoogleSearchConsoleError) {
+  return error.code === "property_access_denied" || error.code === "property_not_found";
+}
+
 export function asGoogleSearchConsoleError(error: unknown): GoogleSearchConsoleError {
   if (error instanceof GoogleSearchConsoleError) return error;
   return new GoogleSearchConsoleError(
@@ -199,11 +210,7 @@ export function asGoogleSearchConsoleError(error: unknown): GoogleSearchConsoleE
   );
 }
 
-export async function submitSitemapToSearchConsole() {
-  const property = searchConsoleProperty();
-  const sitemap = sitemapUrl();
-  const token = await getAccessToken(getServiceAccount());
-
+async function submitSitemapForProperty(property: string, sitemap: string, token: string) {
   let response: Response;
   try {
     response = await fetch(
@@ -216,25 +223,45 @@ export async function submitSitemapToSearchConsole() {
       "The Google Search Console sitemap endpoint could not be reached.",
     );
   }
-
   if (!response.ok) throw errorForGoogleResponse(response.status, "sitemap");
+  return response.status;
+}
 
-  return { property, sitemap, submittedAt: new Date().toISOString(), status: response.status };
+export async function submitSitemapToSearchConsole() {
+  const configuredProperty = searchConsoleProperty();
+  const sitemap = sitemapUrl();
+  const token = await getAccessToken(getServiceAccount());
+  let lastFailure: GoogleSearchConsoleError | undefined;
+
+  for (const property of propertyCandidates()) {
+    try {
+      const status = await submitSitemapForProperty(property, sitemap, token);
+      return {
+        property,
+        configuredProperty,
+        fallbackUsed: property !== configuredProperty,
+        sitemap,
+        submittedAt: new Date().toISOString(),
+        status,
+      };
+    } catch (error) {
+      const failure = asGoogleSearchConsoleError(error);
+      if (!canFallback(failure)) throw failure;
+      lastFailure = failure;
+    }
+  }
+
+  throw lastFailure ?? new GoogleSearchConsoleError(
+    "property_not_found",
+    "No configured Search Console property accepted the sitemap submission.",
+  );
 }
 
 function isoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-export async function getSearchConsoleReport(requestedDays: number) {
-  const days = Math.min(Math.max(Math.floor(requestedDays), 7), 90);
-  const end = new Date();
-  end.setUTCDate(end.getUTCDate() - 3);
-  const start = new Date(end);
-  start.setUTCDate(start.getUTCDate() - days + 1);
-  const property = searchConsoleProperty();
-  const token = await getAccessToken(getServiceAccount());
-
+async function requestSearchConsoleReport(property: string, token: string, startDate: string, endDate: string) {
   let response: Response;
   try {
     response = await fetch(
@@ -243,8 +270,8 @@ export async function getSearchConsoleReport(requestedDays: number) {
         method: "POST",
         headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
         body: JSON.stringify({
-          startDate: isoDate(start),
-          endDate: isoDate(end),
+          startDate,
+          endDate,
           dimensions: ["query", "page"],
           rowLimit: 100,
           dataState: "final",
@@ -258,23 +285,52 @@ export async function getSearchConsoleReport(requestedDays: number) {
       "The Google Search Console reporting endpoint could not be reached.",
     );
   }
-
   const payload = await response.json().catch(() => ({})) as SearchConsoleResponse;
   if (!response.ok) throw errorForGoogleResponse(response.status, "report");
+  return payload;
+}
 
-  return {
-    source: "Google Search Console",
-    property,
-    startDate: isoDate(start),
-    endDate: isoDate(end),
-    generatedAt: new Date().toISOString(),
-    rows: (payload.rows ?? []).map((row) => ({
-      query: row.keys?.[0] ?? "",
-      page: row.keys?.[1] ?? "",
-      clicks: row.clicks,
-      impressions: row.impressions,
-      ctr: row.ctr,
-      position: row.position,
-    })),
-  };
+export async function getSearchConsoleReport(requestedDays: number) {
+  const days = Math.min(Math.max(Math.floor(requestedDays), 7), 90);
+  const end = new Date();
+  end.setUTCDate(end.getUTCDate() - 3);
+  const start = new Date(end);
+  start.setUTCDate(start.getUTCDate() - days + 1);
+  const startDate = isoDate(start);
+  const endDate = isoDate(end);
+  const configuredProperty = searchConsoleProperty();
+  const token = await getAccessToken(getServiceAccount());
+  let lastFailure: GoogleSearchConsoleError | undefined;
+
+  for (const property of propertyCandidates()) {
+    try {
+      const payload = await requestSearchConsoleReport(property, token, startDate, endDate);
+      return {
+        source: "Google Search Console",
+        property,
+        configuredProperty,
+        fallbackUsed: property !== configuredProperty,
+        startDate,
+        endDate,
+        generatedAt: new Date().toISOString(),
+        rows: (payload.rows ?? []).map((row) => ({
+          query: row.keys?.[0] ?? "",
+          page: row.keys?.[1] ?? "",
+          clicks: row.clicks,
+          impressions: row.impressions,
+          ctr: row.ctr,
+          position: row.position,
+        })),
+      };
+    } catch (error) {
+      const failure = asGoogleSearchConsoleError(error);
+      if (!canFallback(failure)) throw failure;
+      lastFailure = failure;
+    }
+  }
+
+  throw lastFailure ?? new GoogleSearchConsoleError(
+    "property_not_found",
+    "No configured Search Console property accepted the report request.",
+  );
 }

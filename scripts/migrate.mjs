@@ -58,6 +58,10 @@ const statements = [
   `CREATE TABLE IF NOT EXISTS form_definitions (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), name text NOT NULL UNIQUE, target_email text NOT NULL, enabled boolean NOT NULL DEFAULT true, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now())`,
   `CREATE TABLE IF NOT EXISTS page_definitions (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), path text NOT NULL UNIQUE, label text NOT NULL, seo_title text, seo_description text, enabled boolean NOT NULL DEFAULT true, updated_at timestamptz NOT NULL DEFAULT now())`,
   `CREATE TABLE IF NOT EXISTS site_events (id bigserial PRIMARY KEY, path text NOT NULL, event_type text NOT NULL DEFAULT 'page_view', created_at timestamptz NOT NULL DEFAULT now())`,
+  `CREATE TABLE IF NOT EXISTS visitor_profiles (id text PRIMARY KEY, first_seen_at timestamptz NOT NULL DEFAULT now(), last_seen_at timestamptz NOT NULL DEFAULT now(), first_path text, last_path text, first_referrer text, last_referrer text, first_utm jsonb NOT NULL DEFAULT '{}'::jsonb, last_utm jsonb NOT NULL DEFAULT '{}'::jsonb)`,
+  `CREATE TABLE IF NOT EXISTS visit_sessions (id text PRIMARY KEY, visitor_id text NOT NULL REFERENCES visitor_profiles(id) ON DELETE CASCADE, started_at timestamptz NOT NULL DEFAULT now(), last_seen_at timestamptz NOT NULL DEFAULT now(), ended_at timestamptz, entry_path text NOT NULL, exit_path text NOT NULL, referrer text, utm jsonb NOT NULL DEFAULT '{}'::jsonb)`,
+  `ALTER TABLE site_events ADD COLUMN IF NOT EXISTS visitor_id text, ADD COLUMN IF NOT EXISTS session_id text, ADD COLUMN IF NOT EXISTS referrer text, ADD COLUMN IF NOT EXISTS metadata jsonb NOT NULL DEFAULT '{}'::jsonb`,
+  `ALTER TABLE leads ADD COLUMN IF NOT EXISTS visitor_id text, ADD COLUMN IF NOT EXISTS session_id text`,
   "CREATE INDEX IF NOT EXISTS products_status_published_idx ON products(status, published, created_at DESC)",
   "CREATE INDEX IF NOT EXISTS news_status_published_idx ON news_articles(status, published_at DESC)",
   "CREATE INDEX IF NOT EXISTS blog_posts_status_published_idx ON blog_posts(status, published_at DESC)",
@@ -76,6 +80,10 @@ const statements = [
   "CREATE INDEX IF NOT EXISTS audit_logs_created_idx ON audit_logs(created_at DESC)",
   "CREATE INDEX IF NOT EXISTS seo_sync_runs_source_idx ON seo_sync_runs(source, started_at DESC)",
   "CREATE INDEX IF NOT EXISTS site_events_created_idx ON site_events(created_at DESC)",
+  "CREATE INDEX IF NOT EXISTS site_events_visitor_created_idx ON site_events(visitor_id, created_at DESC)",
+  "CREATE INDEX IF NOT EXISTS site_events_session_created_idx ON site_events(session_id, created_at ASC)",
+  "CREATE INDEX IF NOT EXISTS visit_sessions_visitor_started_idx ON visit_sessions(visitor_id, started_at DESC)",
+  "CREATE INDEX IF NOT EXISTS leads_visitor_created_idx ON leads(visitor_id, created_at DESC)",
   "INSERT INTO roles (id, name, description) VALUES ('super_admin','超级管理员','完整系统权限'),('admin','管理员','后台运营权限'),('editor','内容编辑','内容编辑与草稿权限'),('marketing','市场人员','营销、SEO与同步查看权限'),('sales','销售人员','询盘跟进权限'),('analyst','数据分析人员','数据查看权限'),('viewer','只读用户','只读权限') ON CONFLICT (id) DO NOTHING",
 ];
 

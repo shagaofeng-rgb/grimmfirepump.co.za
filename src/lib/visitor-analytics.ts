@@ -17,7 +17,7 @@ export function ensureVisitorAnalyticsSchema() {
       last_referrer text,
       first_utm jsonb NOT NULL DEFAULT '{}'::jsonb,
       last_utm jsonb NOT NULL DEFAULT '{}'::jsonb
-    )`);
+    )`;
     await sql`CREATE TABLE IF NOT EXISTS visit_sessions (
       id text PRIMARY KEY,
       visitor_id text NOT NULL REFERENCES visitor_profiles(id) ON DELETE CASCADE,
@@ -28,7 +28,7 @@ export function ensureVisitorAnalyticsSchema() {
       exit_path text NOT NULL,
       referrer text,
       utm jsonb NOT NULL DEFAULT '{}'::jsonb
-    )`);
+    )`;
     await sql`ALTER TABLE site_events ADD COLUMN IF NOT EXISTS visitor_id text, ADD COLUMN IF NOT EXISTS session_id text, ADD COLUMN IF NOT EXISTS referrer text, ADD COLUMN IF NOT EXISTS metadata jsonb NOT NULL DEFAULT '{}'::jsonb`;
     await sql`ALTER TABLE leads ADD COLUMN IF NOT EXISTS visitor_id text, ADD COLUMN IF NOT EXISTS session_id text`;
     await sql`CREATE INDEX IF NOT EXISTS site_events_visitor_created_idx ON site_events(visitor_id, created_at DESC)`;

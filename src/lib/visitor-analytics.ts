@@ -29,12 +29,12 @@ export function ensureVisitorAnalyticsSchema() {
       referrer text,
       utm jsonb NOT NULL DEFAULT '{}'::jsonb
     )`);
-    await sql.query("ALTER TABLE site_events ADD COLUMN IF NOT EXISTS visitor_id text, ADD COLUMN IF NOT EXISTS session_id text, ADD COLUMN IF NOT EXISTS referrer text, ADD COLUMN IF NOT EXISTS metadata jsonb NOT NULL DEFAULT '{}'::jsonb");
-    await sql.query("ALTER TABLE leads ADD COLUMN IF NOT EXISTS visitor_id text, ADD COLUMN IF NOT EXISTS session_id text");
-    await sql.query("CREATE INDEX IF NOT EXISTS site_events_visitor_created_idx ON site_events(visitor_id, created_at DESC)");
-    await sql.query("CREATE INDEX IF NOT EXISTS site_events_session_created_idx ON site_events(session_id, created_at ASC)");
-    await sql.query("CREATE INDEX IF NOT EXISTS visit_sessions_visitor_started_idx ON visit_sessions(visitor_id, started_at DESC)");
-    await sql.query("CREATE INDEX IF NOT EXISTS leads_visitor_created_idx ON leads(visitor_id, created_at DESC)");
+    await sql`ALTER TABLE site_events ADD COLUMN IF NOT EXISTS visitor_id text, ADD COLUMN IF NOT EXISTS session_id text, ADD COLUMN IF NOT EXISTS referrer text, ADD COLUMN IF NOT EXISTS metadata jsonb NOT NULL DEFAULT '{}'::jsonb`;
+    await sql`ALTER TABLE leads ADD COLUMN IF NOT EXISTS visitor_id text, ADD COLUMN IF NOT EXISTS session_id text`;
+    await sql`CREATE INDEX IF NOT EXISTS site_events_visitor_created_idx ON site_events(visitor_id, created_at DESC)`;
+    await sql`CREATE INDEX IF NOT EXISTS site_events_session_created_idx ON site_events(session_id, created_at ASC)`;
+    await sql`CREATE INDEX IF NOT EXISTS visit_sessions_visitor_started_idx ON visit_sessions(visitor_id, started_at DESC)`;
+    await sql`CREATE INDEX IF NOT EXISTS leads_visitor_created_idx ON leads(visitor_id, created_at DESC)`;
   })().catch((error) => {
     schemaReady = null;
     throw error;

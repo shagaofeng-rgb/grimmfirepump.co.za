@@ -22,7 +22,7 @@ export function InquiryForm({ product = "EDJ Fire Pump Set" }: { product?: strin
     const response = await fetch("/api/inquiries", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...fields, ...visitor, consent: fields.consent === "on" }),
+      body: JSON.stringify({ ...fields, ...visitor, sourcePage: window.location.pathname, consent: fields.consent === "on" }),
     });
     const data = await response.json() as { error?: string; message?: string };
 

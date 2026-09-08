@@ -18,8 +18,8 @@ export async function GET(request: NextRequest, context: { params: Promise<{ mod
   const needle = `%${query.q}%`;
   const from = query.from ?? new Date(0);
   const to = query.to ?? new Date("9999-12-31T23:59:59.999Z");
-  let data: unknown[] = [];
-  let count: unknown[] = [];
+  let data: unknown = [];
+  let count: unknown = [];
 
   if (resource === "categories") [data, count] = await Promise.all([
     sql`SELECT id, name, slug, description, enabled, sort_order AS "sortOrder", updated_at AS "updatedAt" FROM product_categories WHERE deleted_at IS NULL AND updated_at >= ${from} AND updated_at < ${to} AND (${query.q}='' OR name ILIKE ${needle} OR slug ILIKE ${needle}) ORDER BY sort_order, name LIMIT ${query.pageSize} OFFSET ${query.offset}`,

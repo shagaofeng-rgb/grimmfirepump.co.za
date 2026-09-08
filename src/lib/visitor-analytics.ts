@@ -7,7 +7,7 @@ export function ensureVisitorAnalyticsSchema() {
   if (!hasDatabase()) return Promise.resolve();
   if (!schemaReady) schemaReady = (async () => {
     const sql = getDatabase();
-    await sql.query(`CREATE TABLE IF NOT EXISTS visitor_profiles (
+    await sql`CREATE TABLE IF NOT EXISTS visitor_profiles (
       id text PRIMARY KEY,
       first_seen_at timestamptz NOT NULL DEFAULT now(),
       last_seen_at timestamptz NOT NULL DEFAULT now(),
@@ -18,7 +18,7 @@ export function ensureVisitorAnalyticsSchema() {
       first_utm jsonb NOT NULL DEFAULT '{}'::jsonb,
       last_utm jsonb NOT NULL DEFAULT '{}'::jsonb
     )`);
-    await sql.query(`CREATE TABLE IF NOT EXISTS visit_sessions (
+    await sql`CREATE TABLE IF NOT EXISTS visit_sessions (
       id text PRIMARY KEY,
       visitor_id text NOT NULL REFERENCES visitor_profiles(id) ON DELETE CASCADE,
       started_at timestamptz NOT NULL DEFAULT now(),

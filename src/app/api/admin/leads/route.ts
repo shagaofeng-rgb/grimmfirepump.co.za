@@ -25,15 +25,19 @@ export async function GET(request: NextRequest) {
   const rangeStart = query.from ?? new Date(0);
   const rangeEnd = query.to ?? new Date("9999-12-31T23:59:59.999Z");
   const sql = getDatabase();
-  const where = sql`deleted_at IS NULL AND created_at >= ${rangeStart} AND created_at < ${rangeEnd}
-    AND (${query.q} = '' OR name ILIKE ${needle} OR company ILIKE ${needle} OR email ILIKE ${needle} OR country ILIKE ${needle} OR product_interest ILIKE ${needle})
-    AND (${status} = '' OR status = ${status}) AND (${priority} = '' OR priority = ${priority})
-    AND (${owner} = '' OR COALESCE(sales_owner,'') = ${owner}) AND (${country} = '' OR country = ${country})
-    AND (${source} = '' OR COALESCE(source_page,'') = ${source})`;
   const [data, count] = await Promise.all([
     sql`SELECT id, name, company, email, phone, country, product_interest AS "productInterest", message, status, sales_owner AS "salesOwner", priority, internal_note AS "internalNote", source_page AS "sourcePage", utm, visitor_id AS "visitorId", session_id AS "sessionId", created_at AS "createdAt", updated_at AS "updatedAt"
-      FROM leads WHERE ${where} ORDER BY created_at DESC LIMIT ${query.pageSize} OFFSET ${query.offset}`,
-    sql`SELECT count(*)::int AS value FROM leads WHERE ${where}`,
+      FROM leads WHERE deleted_at IS NULL AND created_at >= ${rangeStart} AND created_at < ${rangeEnd}
+      AND (${query.q} = '' OR name ILIKE ${needle} OR company ILIKE ${needle} OR email ILIKE ${needle} OR country ILIKE ${needle} OR product_interest ILIKE ${needle})
+      AND (${status} = '' OR status = ${status}) AND (${priority} = '' OR priority = ${priority})
+      AND (${owner} = '' OR COALESCE(sales_owner,'') = ${owner}) AND (${country} = '' OR country = ${country})
+      AND (${source} = '' OR COALESCE(source_page,'') = ${source})
+      ORDER BY created_at DESC LIMIT ${query.pageSize} OFFSET ${query.offset}`,
+    sql`SELECT count(*)::int AS value FROM leads WHERE deleted_at IS NULL AND created_at >= ${rangeStart} AND created_at < ${rangeEnd}
+      AND (${query.q} = '' OR name ILIKE ${needle} OR company ILIKE ${needle} OR email ILIKE ${needle} OR country ILIKE ${needle} OR product_interest ILIKE ${needle})
+      AND (${status} = '' OR status = ${status}) AND (${priority} = '' OR priority = ${priority})
+      AND (${owner} = '' OR COALESCE(sales_owner,'') = ${owner}) AND (${country} = '' OR country = ${country})
+      AND (${source} = '' OR COALESCE(source_page,'') = ${source})`,
   ]);
   const total = Number(((count as unknown as { value?: number }[])[0]?.value) ?? 0);
   return NextResponse.json({ success: true, data, pagination: pagination(total, query.page, query.pageSize) }, { headers: { "Cache-Control": "private, no-store" } });

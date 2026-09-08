@@ -1,16 +1,13 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { getVisitorContext, trackSiteEvent } from "@/lib/client-analytics";
 
 function track(event: string, parameters: Record<string, string>) {
   const windowWithTracking = window as Window & { dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void };
   windowWithTracking.dataLayer?.push({ event, ...parameters });
   windowWithTracking.gtag?.("event", event, parameters);
-  void fetch("/api/analytics/event", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path: window.location.pathname, eventType: event }),
-  });
+  void trackSiteEvent(event, window.location.pathname);
 }
 
 export function InquiryForm({ product = "EDJ Fire Pump Set" }: { product?: string }) {
@@ -21,10 +18,11 @@ export function InquiryForm({ product = "EDJ Fire Pump Set" }: { product?: strin
     setState({ loading: true, message: "" });
     const form = event.currentTarget;
     const fields = Object.fromEntries(new FormData(form).entries());
+    const visitor = getVisitorContext();
     const response = await fetch("/api/inquiries", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...fields, consent: fields.consent === "on" }),
+      body: JSON.stringify({ ...fields, ...visitor, consent: fields.consent === "on" }),
     });
     const data = await response.json() as { error?: string; message?: string };
 

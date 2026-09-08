@@ -21,9 +21,9 @@ export async function POST(request: NextRequest) {
       await ensureVisitorAnalyticsSchema();
       const sql = getDatabase();
       await sql`INSERT INTO leads (id, name, company, email, phone, country, product_interest, message, status, consent_at, created_at, source_page, visitor_id, session_id)
-        VALUES (${id}, ${input.name}, ${input.company}, ${input.email}, ${input.phone || null}, ${input.country}, ${input.productInterest}, ${input.message}, 'new', ${now}, ${now}, ${input.visitorId}, ${input.sessionId})`;
+        VALUES (${id}, ${input.name}, ${input.company}, ${input.email}, ${input.phone || null}, ${input.country}, ${input.productInterest}, ${input.message}, 'new', ${now}, ${now}, ${input.sourcePage ?? '/contact'}, ${input.visitorId}, ${input.sessionId})`;
       await sql`INSERT INTO site_events (path, event_type, visitor_id, session_id)
-        VALUES ('/contact', 'generate_lead', ${input.visitorId}, ${input.sessionId})`;
+        VALUES (${input.sourcePage ?? '/contact'}, 'generate_lead', ${input.visitorId}, ${input.sessionId})`;
     } else {
       await addLead({ id, name: input.name, company: input.company, email: input.email, phone: input.phone, country: input.country, productInterest: input.productInterest, message: input.message, status: "new", createdAt: now, consentAt: now });
     }
